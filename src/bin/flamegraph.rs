@@ -9,7 +9,73 @@ use inferno::flamegraph::{
 };
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "inferno-flamegraph", author = "")]
+#[structopt(
+    name = "inferno-flamegraph",
+    author = "",
+    about = r#"
+This takes stack samples and renders a call graph, allowing hot functions
+and codepaths to be quickly identified. Stack samples can be generated using
+tools such as DTrace, perf, SystemTap, and Instruments.
+"#,
+    after_help = r#"
+ USAGE: inferno-flamegraph [options] input.txt > graph.svg
+
+        grep funcA input.txt | inferno-flamegraph [options] > graph.svg
+
+ Then open the resulting .svg in a web browser, for interactivity: mouse-over
+ frames for info, click to zoom, and ctrl-F to search.
+
+ The input is stack frames and sample counts formatted as single lines.  Each
+ frame in the stack is semicolon separated, with a space and count at the end
+ of the line.  These can be generated for Linux perf script output using
+ stackcollapse-perf.pl, for DTrace using stackcollapse.pl, and for other tools
+ using the other stackcollapse programs.  Example input:
+
+  swapper;start_kernel;rest_init;cpu_idle;default_idle;native_safe_halt 1
+
+ An optional extra column of counts can be provided to generate a differential
+ flame graph of the counts, colored red for more, and blue for less.  This
+ can be useful when using flame graphs for non-regression testing.
+ See the header comment in the difffolded.pl program for instructions.
+
+ The input functions can optionally have annotations at the end of each
+ function name, following a precedent by some tools (Linux perf's _[k]):
+     _[k] for kernel
+ _[i] for inlined
+ _[j] for jit
+ _[w] for waker
+ Some of the stackcollapse programs support adding these annotations, eg,
+ stackcollapse-perf.pl --kernel --jit. They are used merely for colors by
+ some palettes, eg, flamegraph.pl --color=java.
+
+ The output flame graph shows relative presence of functions in stack samples.
+ The ordering on the x-axis has no meaning; since the data is samples, time
+ order of events is not known.  The order used sorts function names
+ alphabetically.
+
+ While intended to process stack samples, this can also process stack traces.
+ For example, tracing stacks for memory allocation, or resource usage.  You
+ can use --title to set the title to reflect the content, and --countname
+ to change "samples" to "bytes" etc.
+
+ There are a few different palettes, selectable using --color.  By default,
+ the colors are selected at random (except for differentials).  Functions
+ called "-" will be printed gray, which can be used for stack separators (eg,
+ between user and kernel stacks).
+
+ HISTORY
+
+ This was inspired by Neelakanth Nadgir's excellent function_call_graph.rb
+ program, which visualized function entry and return trace events.  As Neel
+ wrote: "The output displayed is inspired by Roch's CallStackAnalyzer which
+ was in turn inspired by the work on vftrace by Jan Boerhout".  See:
+ https://blogs.oracle.com/realneel/entry/visualizing_callstacks_via_dtrace_and
+
+ Copyright 2016 Netflix, Inc.
+ Copyright 2011 Joyent, Inc.  All rights reserved.
+ Copyright 2011 Brendan Gregg.  All rights reserved.
+"#
+)]
 struct Opt {
     /// File containing attributes to use for the SVG frames of particular functions.
     /// Each line in the file should be a function name followed by a tab,
